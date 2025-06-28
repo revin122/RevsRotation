@@ -1,4 +1,4 @@
-package com.revsrotation
+package com.revinph.revsrotation
 
 import android.app.Application
 import com.facebook.react.PackageList
