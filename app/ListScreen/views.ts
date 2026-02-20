@@ -1,8 +1,15 @@
 import { StyleSheet } from 'react-native'
 
 export const styles = StyleSheet.create({
-    container: { flex: 1, padding: 20 },
-    header: { fontSize: 18, fontWeight: '600', marginBottom: 10 },
+    container: { 
+      flex: 1,
+      margin: 20,
+    },
+    header: { 
+      fontSize: 18, 
+      fontWeight: '600', 
+      marginBottom: 10 
+    },
     listItem: {
       padding: 12,
       backgroundColor: '#f0f0f0',

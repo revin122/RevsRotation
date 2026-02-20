@@ -1,2 +1,5 @@
 
-export type Node = { type: 'item'; value: string } | { type: 'list'; children: Node[] };
+export type Node = { 
+    name: string 
+    children: Node[] 
+}
