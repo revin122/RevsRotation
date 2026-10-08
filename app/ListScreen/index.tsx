@@ -1,16 +1,16 @@
 import React, { useState } from 'react'
 import { View, Text, FlatList, Button, TouchableOpacity, TextInput, StatusBar } from 'react-native'
 import { Node } from '../types'
-import { getNodeAtPath } from '../utils'
+import { createNode, getNodeAtPath } from '../utils'
 import { produce } from 'immer'
 import { styles } from './views'
 import {SafeAreaView, SafeAreaProvider} from 'react-native-safe-area-context'
 
 type Props = {
   data: Node
-  path: number[]
+  path: string[]
   onDataUpdate: (newData: Node) => void
-  onNavigate: (newPath: number[]) => void
+  onNavigate: (newPath: string[]) => void
   onBack: () => void
   isRoot: boolean
 }
@@ -44,7 +44,7 @@ const ListScreen: React.FC<Props> = ({
     if (!newText.trim()) return
     const updated = produce(data, (draft) => {
       const node = getNodeAtPath(draft, path)
-      node.children.push({ name: newText, children: [] });
+      node.children.push(createNode(newText));
     })
     onDataUpdate(updated)
   }
@@ -60,11 +60,11 @@ const ListScreen: React.FC<Props> = ({
 
         <FlatList
           data={current.children}
-          keyExtractor={(_, i) => i.toString()}
-          renderItem={({ item, index }) => (
+          keyExtractor={item => item.id}
+          renderItem={({ item }) => (
             <TouchableOpacity
               style={styles.listItem}
-              onPress={() => onNavigate([...path, index])}
+              onPress={() => onNavigate([...path, item.id])}
             >
               <Text>
                 {item.name}

@@ -9,19 +9,20 @@ import { flattenLeafPaths } from './utils';
 import ListScreen from './ListScreen';
 
 type RootStackParamList = {
-  RevRotation: { path: number[] };
+  RevRotation: { path: string[] };
 }
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 const initialData: Node = {
+  id: 'root',
   name: 'list',
   children: []
 }
 
 export default function App() {
   const [data, setData] = useState<Node>(initialData);
-  const [leafPaths, setLeafPaths] = useState<number[][]>([]);
+  const [leafPaths, setLeafPaths] = useState<string[][]>([]);
 
   useEffect(() => {
     const paths = flattenLeafPaths(data);
