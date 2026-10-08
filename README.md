@@ -1,97 +1,104 @@
-This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
+# RevsRotation
 
-# Getting Started
+RevsRotation is a React Native app for organizing items into nested lists, with a rotation feature planned for future development. Every item can contain its own sublist, letting you organize related items at multiple levels and navigate through them one list at a time.
 
-> **Note**: Make sure you have completed the [Set Up Your Environment](https://reactnative.dev/docs/set-up-your-environment) guide before proceeding.
+The current version focuses on creating and browsing this list structure. It also collects paths to leaf items—items with no children—as a foundation for future rotation behavior.
 
-## Step 1: Start Metro
+## Current features
 
-First, you will need to run **Metro**, the JavaScript build tool for React Native.
+- Add named items to the main list or any sublist.
+- Tap an item to open its children and use Back to return to the parent list.
+- View the current list title in a centered header with Back on the left.
+- Keep the text field and Add Item button above the virtual keyboard.
+- Identify items using stable IDs for list rendering and navigation, rather than array positions.
 
-To start the Metro dev server, run the following command from the root of your React Native project:
+Data is currently held in memory and resets when the app restarts or fully reloads. Saving lists, renaming, deleting, drag-to-reorder, and rotation controls are not implemented yet.
+
+## Using the app
+
+1. On **Main**, enter a name and tap **+ Add Item**.
+2. Tap the new item to open its sublist.
+3. Add more items inside it to build a hierarchy.
+4. Tap **Back** to return to the previous list.
+
+## Development setup
+
+The project uses React Native 0.80, React 19, TypeScript, React Navigation, and Immer. Use **Yarn** for JavaScript dependencies and project commands.
+
+You will need Node.js 18 or newer and Yarn. iOS development requires macOS, Xcode, an installed simulator runtime, Ruby/Bundler, and CocoaPods. Android development requires Android Studio, the Android SDK, a compatible JDK, and an emulator or connected device.
+
+Install JavaScript dependencies from the project root:
 
 ```sh
-# Using npm
-npm start
-
-# OR using Yarn
-yarn start
+yarn install
 ```
 
-## Step 2: Build and run your app
-
-With Metro running, open a new terminal window/pane from the root of your React Native project, and use one of the following commands to build and run your Android or iOS app:
-
-### Android
-
-```sh
-# Using npm
-npm run android
-
-# OR using Yarn
-yarn android
-```
-
-### iOS
-
-For iOS, remember to install CocoaPods dependencies (this only needs to be run on first clone or after updating native deps).
-
-The first time you create a new project, run the Ruby bundler to install CocoaPods itself:
+For iOS, also install the Ruby and CocoaPods dependencies:
 
 ```sh
 bundle install
-```
-
-Then, and every time you update your native dependencies, run:
-
-```sh
+cd ios
 bundle exec pod install
+cd ..
 ```
 
-For more information, please visit [CocoaPods Getting Started guide](https://guides.cocoapods.org/using/getting-started.html).
+Repeat the CocoaPods step when native dependencies change.
+
+### Run locally
+
+Start Metro from the project root:
 
 ```sh
-# Using npm
-npm run ios
-
-# OR using Yarn
-yarn ios
+yarn start
 ```
 
-If everything is set up correctly, you should see your new app running in the Android Emulator, iOS Simulator, or your connected device.
+In a second terminal, build and launch the desired platform:
 
-This is one way to run your app — you can also build it directly from Android Studio or Xcode.
+```sh
+# iOS
+yarn ios
 
-## Step 3: Modify your app
+# Android
+yarn android
+```
 
-Now that you have successfully run the app, let's make changes!
+For Xcode development, open `ios/RevsRotation.xcworkspace`.
 
-Open `App.tsx` in your text editor of choice and make some changes. When you save, your app will automatically update and reflect these changes — this is powered by [Fast Refresh](https://reactnative.dev/docs/fast-refresh).
+## Project structure
 
-When you want to forcefully reload, for example to reset the state of your app, you can perform a full reload:
+| Path | Purpose |
+| --- | --- |
+| `index.js` | Registers the app with React Native. |
+| `app/index.tsx` | Owns the list data and navigation stack. |
+| `app/ListScreen/index.tsx` | Displays a list, its header, and the add-item controls. |
+| `app/ListScreen/views.ts` | Defines the list screen styles. |
+| `app/types.ts` | Defines each node's ID, name, and children. |
+| `app/utils.tsx` | Creates nodes, resolves ID-based paths, and collects leaf paths. |
+| `__tests__/utils.test.ts` | Checks ID uniqueness and path behavior. |
+| `ios/` and `android/` | Native platform projects. |
 
-- **Android**: Press the <kbd>R</kbd> key twice or select **"Reload"** from the **Dev Menu**, accessed via <kbd>Ctrl</kbd> + <kbd>M</kbd> (Windows/Linux) or <kbd>Cmd ⌘</kbd> + <kbd>M</kbd> (macOS).
-- **iOS**: Press <kbd>R</kbd> in iOS Simulator.
+Navigation paths contain child IDs from the root to the selected item. The root path is empty. Leaf paths use the same format, and an empty root produces no leaf paths.
 
-## Congratulations! :tada:
+## Checks
 
-You've successfully run and modified your React Native App. :partying_face:
+Run the focused data and navigation-path tests:
 
-### Now what?
+```sh
+yarn test __tests__/utils.test.ts --runInBand --watchman=false
+```
 
-- If you want to add this new React Native code to an existing application, check out the [Integration guide](https://reactnative.dev/docs/integration-with-existing-apps).
-- If you're curious to learn more about React Native, check out the [docs](https://reactnative.dev/docs/getting-started).
+Other available checks:
 
-# Troubleshooting
+```sh
+yarn test
+yarn lint
+yarn tsc --noEmit
+```
 
-If you're having issues getting the above steps to work, see the [Troubleshooting](https://reactnative.dev/docs/troubleshooting) page.
+The repository still includes starter code in `app/Appbck.tsx` and a starter render test in `__tests__/App.test.tsx`. The backup screen has a known `NewAppScreen` JSX type error, and the starter test imports the old `../App` entry point. These need cleanup before the full checks can be expected to pass.
 
-# Learn More
+## Planned next steps
 
-To learn more about React Native, take a look at the following resources:
-
-- [React Native Website](https://reactnative.dev) - learn more about React Native.
-- [Getting Started](https://reactnative.dev/docs/environment-setup) - an **overview** of React Native and how setup your environment.
-- [Learn the Basics](https://reactnative.dev/docs/getting-started) - a **guided tour** of the React Native **basics**.
-- [Blog](https://reactnative.dev/blog) - read the latest official React Native **Blog** posts.
-- [`@facebook/react-native`](https://github.com/facebook/react-native) - the Open Source; GitHub **repository** for React Native.
+- Add Edit mode with rename and delete actions, including confirmation when deleting a sublist.
+- Add drag-to-reorder within the current list.
+- Develop rotation behavior using the leaf-item paths.
