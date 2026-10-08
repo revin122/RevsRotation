@@ -3,7 +3,7 @@ import TestRenderer, { act } from 'react-test-renderer';
 import { Alert, Button, TouchableOpacity } from 'react-native';
 import ListScreen from '../app/ListScreen';
 import ReorderHandle from '../app/ListScreen/ReorderHandle';
-import { Node } from '../app/types';
+import { ListData } from '../app/types';
 
 jest.mock('react-native-safe-area-context', () => {
   const { View } = require('react-native');
@@ -11,17 +11,17 @@ jest.mock('react-native-safe-area-context', () => {
 });
 
 test('edits, cancels deletion, deletes a subtree, reorders, and returns to browsing', async () => {
-  let data: Node = {
+  let data: ListData = {
     id: 'root',
     name: 'Root',
     children: [
       {
         id: 'a',
         name: 'Alpha',
-        children: [{ id: 'nested', name: 'Nested', children: [] }],
+        hasChildren: true,
       },
-      { id: 'b', name: 'Beta', children: [] },
-      { id: 'c', name: 'Gamma', children: [] },
+      { id: 'b', name: 'Beta', hasChildren: false },
+      { id: 'c', name: 'Gamma', hasChildren: false },
     ],
   };
   const navigate = jest.fn();
@@ -33,9 +33,10 @@ test('edits, cancels deletion, deletes a subtree, reorders, and returns to brows
       isRoot
       onBack={jest.fn()}
       onNavigate={navigate}
-      onDataUpdate={next => {
+      onDataUpdate={async next => {
         data = next;
         screen.update(render());
+        return true;
       }}
     />
   );
@@ -70,7 +71,7 @@ test('edits, cancels deletion, deletes a subtree, reorders, and returns to brows
   });
   expect(data.children[0].name).toBe('Renamed');
   expect(data.children[0].id).toBe('a');
-  expect(data.children[0].children[0].id).toBe('nested');
+  expect(data.children[0].hasChildren).toBe(true);
 
   await act(async () => {
     screen.root.findAllByType(ReorderHandle)[0].props.onEnd(128);
@@ -101,3 +102,49 @@ test('edits, cancels deletion, deletes a subtree, reorders, and returns to brows
     screen.unmount();
   });
 }, 30000);
+
+test.each([true, false])(
+  'add input clears only after a successful save (success=%s)',
+  async success => {
+    let resolveSave!: (saved: boolean) => void;
+    const onDataUpdate = jest.fn(
+      (_next: ListData) =>
+        new Promise<boolean>(resolve => {
+          resolveSave = resolve;
+        }),
+    );
+    let screen!: TestRenderer.ReactTestRenderer;
+    await act(async () => {
+      screen = TestRenderer.create(
+        <ListScreen
+          data={{ id: 'root', name: 'Main', children: [] }}
+          path={[]}
+          isRoot
+          onBack={jest.fn()}
+          onNavigate={jest.fn()}
+          onDataUpdate={onDataUpdate}
+        />,
+      );
+    });
+    const input = () =>
+      screen.root.findByProps({ placeholder: 'Enter item text' });
+    await act(async () => {
+      input().props.onChangeText('New item');
+    });
+    let pending!: Promise<void>;
+    await act(async () => {
+      pending = screen.root
+        .findAllByType(Button)
+        .find(button => button.props.title === '+ Add Item')!
+        .props.onPress();
+    });
+    expect(input().props.value).toBe('New item');
+    expect(onDataUpdate.mock.calls[0][0].children[0].name).toBe('New item');
+    await act(async () => {
+      resolveSave(success);
+      await pending;
+    });
+    expect(input().props.value).toBe(success ? '' : 'New item');
+    await act(async () => screen.unmount());
+  },
+);

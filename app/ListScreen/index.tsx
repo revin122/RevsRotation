@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import {
   Alert,
   Keyboard,
@@ -13,17 +13,18 @@ import {
   TextInput,
   StatusBar,
 } from 'react-native';
-import { Node } from '../types';
-import { createNode, getNodeAtPath } from '../utils';
+import { ListData, ListItem } from '../types';
+import { createNode } from '../utils';
 import { produce } from 'immer';
 import { styles, ROW_HEIGHT } from './views';
 import { SafeAreaView, SafeAreaProvider } from 'react-native-safe-area-context';
 import ReorderHandle from './ReorderHandle';
 
 type Props = {
-  data: Node;
+  data: ListData;
+  busy?: boolean;
   path: string[];
-  onDataUpdate: (newData: Node) => void;
+  onDataUpdate: (newData: ListData) => Promise<boolean>;
   onNavigate: (newPath: string[]) => void;
   onBack: () => void;
   isRoot: boolean;
@@ -31,14 +32,16 @@ type Props = {
 
 const ListScreen: React.FC<Props> = ({
   data,
+  busy = false,
   path,
   onDataUpdate,
   onNavigate,
   onBack,
   isRoot,
 }) => {
-  const current = getNodeAtPath(data, path);
+  const current = data;
   const [newText, setNewText] = useState('');
+  const newItemInput = useRef<TextInput>(null);
   const [editing, setEditing] = useState(false);
   const [renameId, setRenameId] = useState<string | null>(null);
   const [renameText, setRenameText] = useState('');
@@ -46,33 +49,37 @@ const ListScreen: React.FC<Props> = ({
     null,
   );
 
-  const updateChildren = (update: (children: Node[]) => void) => {
-    onDataUpdate(
-      produce(data, draft => update(getNodeAtPath(draft, path).children)),
-    );
+  const updateChildren = (update: (children: ListItem[]) => void) => {
+    if (busy) return Promise.resolve(false);
+    return onDataUpdate(produce(data, draft => update(draft.children)));
   };
 
-  const addSublist = () => {
+  const addSublist = async () => {
     if (!newText.trim()) return;
-    updateChildren(children => {
-      children.push(createNode(newText.trim()));
+    const saved = await updateChildren(children => {
+      const { id, name } = createNode(newText.trim());
+      children.push({ id, name, hasChildren: false });
     });
-    setNewText('');
+    if (saved) {
+      // Keep the native input and controlled value in sync after the async save.
+      newItemInput.current?.clear();
+      setNewText('');
+    }
   };
 
-  const rename = () => {
+  const rename = async () => {
     if (!renameText.trim() || !renameId) return;
-    updateChildren(children => {
+    const saved = await updateChildren(children => {
       const item = children.find(child => child.id === renameId);
       if (item) item.name = renameText.trim();
     });
-    setRenameId(null);
+    if (saved) setRenameId(null);
   };
 
-  const confirmDelete = (item: Node) => {
+  const confirmDelete = (item: ListItem) => {
     Alert.alert(
       `Delete “${item.name}”?`,
-      item.children.length > 0
+      item.hasChildren
         ? 'This will delete this sublist and all items inside it. This cannot be undone.'
         : 'This item will be deleted. This cannot be undone.',
       [
@@ -129,7 +136,7 @@ const ListScreen: React.FC<Props> = ({
                 <TouchableOpacity
                   style={styles.backButton}
                   onPress={onBack}
-                  disabled={!!drag}
+                  disabled={!!drag || busy}
                   accessibilityRole="button"
                   accessibilityLabel="Back"
                 >
@@ -148,7 +155,7 @@ const ListScreen: React.FC<Props> = ({
               {(current.children.length > 0 || editing) && (
                 <TouchableOpacity
                   style={styles.editButton}
-                  disabled={!!drag}
+                  disabled={!!drag || busy}
                   accessibilityRole="button"
                   onPress={() => {
                     Keyboard.dismiss();
@@ -200,7 +207,7 @@ const ListScreen: React.FC<Props> = ({
                     {editing && (
                       <TouchableOpacity
                         style={styles.rowControl}
-                        disabled={!!drag}
+                        disabled={!!drag || busy}
                         accessibilityRole="button"
                         accessibilityLabel={`Delete ${item.name}`}
                         onPress={() => confirmDelete(item)}
@@ -210,7 +217,7 @@ const ListScreen: React.FC<Props> = ({
                     )}
                     <TouchableOpacity
                       style={styles.itemName}
-                      disabled={!!drag}
+                      disabled={!!drag || busy}
                       accessibilityRole="button"
                       accessibilityLabel={`${editing ? 'Rename' : 'Open'} ${
                         item.name
@@ -228,6 +235,7 @@ const ListScreen: React.FC<Props> = ({
                       <ReorderHandle
                         name={item.name}
                         onStart={() => {
+                          if (busy) return;
                           Keyboard.dismiss();
                           setDrag({ id: item.id, distance: 0 });
                         }}
@@ -258,18 +266,25 @@ const ListScreen: React.FC<Props> = ({
             }}
           />
           <TextInput
+            ref={newItemInput}
             style={styles.input}
             placeholder="Enter item text"
             value={newText}
             onChangeText={setNewText}
-            editable={!drag}
+            editable={!drag && !busy}
           />
-          <Button title="+ Add Item" onPress={addSublist} disabled={!!drag} />
+          <Button
+            title="+ Add Item"
+            onPress={addSublist}
+            disabled={!!drag || busy}
+          />
           <Modal
             visible={renameId !== null}
             transparent
             animationType="fade"
-            onRequestClose={() => setRenameId(null)}
+            onRequestClose={() => {
+              if (!busy) setRenameId(null);
+            }}
           >
             <KeyboardAvoidingView
               style={styles.modalOverlay}
@@ -279,6 +294,7 @@ const ListScreen: React.FC<Props> = ({
                 <Text style={styles.dialogTitle}>Rename item</Text>
                 <TextInput
                   style={styles.input}
+                  editable={!busy}
                   value={renameText}
                   onChangeText={setRenameText}
                   autoFocus
@@ -288,11 +304,15 @@ const ListScreen: React.FC<Props> = ({
                   onSubmitEditing={rename}
                 />
                 <View style={styles.dialogButtons}>
-                  <Button title="Cancel" onPress={() => setRenameId(null)} />
+                  <Button
+                    title="Cancel"
+                    disabled={busy}
+                    onPress={() => setRenameId(null)}
+                  />
                   <Button
                     title="Save"
                     onPress={rename}
-                    disabled={!renameText.trim()}
+                    disabled={busy || !renameText.trim()}
                   />
                 </View>
               </View>

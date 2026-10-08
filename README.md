@@ -2,7 +2,7 @@
 
 RevsRotation is a React Native app for organizing items into nested lists, with a rotation feature planned for future development. Every item can contain its own sublist, letting you organize related items at multiple levels and navigate through them one list at a time.
 
-The current version focuses on creating and browsing this list structure. It also collects paths to leaf items—items with no children—as a foundation for future rotation behavior.
+The current version focuses on creating, editing, and saving nested lists locally. Rotation behavior is planned for a future version.
 
 ## Current features
 
@@ -13,7 +13,18 @@ The current version focuses on creating and browsing this list structure. It als
 - Use Edit mode to rename items, confirm deletion of items or entire sublists, and drag handles to reorder within a list.
 - Identify items using stable IDs for list rendering and navigation, rather than array positions.
 
-Data is currently held in memory and resets when the app restarts or fully reloads. Saving lists and rotation controls are not implemented yet.
+Lists are saved automatically in an on-device SQLite database (`revsrotation.sqlite`) using `@op-engineering/op-sqlite`. Data survives app restarts and reloads. Storage works offline; export/import and rotation controls are not implemented yet.
+
+## Local storage
+
+- The app loads only the current list and its immediate children, rather than the entire tree.
+- Each database item has a persistent random ID, parent ID, name, and sibling position.
+- Adding, renaming, deleting, and reordering are saved in transactions. The screen updates after a successful commit; a failed save leaves the previous list intact and shows an error.
+- Foreign keys are enabled on the connection. Deleting an item cascades to its descendants, leaving other branches untouched.
+- A parent/position index supports sublist loading and ordering. Schema changes are tracked with SQLite's `user_version`.
+- Startup and list loading have a retry state. Loading never writes an empty list over existing data.
+
+Previous versions stored items only in memory, so there is no saved dataset to migrate. Items from an old session are not automatically imported. Uninstalling the app or erasing simulator data also removes its local database.
 
 ## Using the app
 
@@ -46,7 +57,7 @@ bundle exec pod install
 cd ..
 ```
 
-Repeat the CocoaPods step when native dependencies change.
+Repeat the CocoaPods step when native dependencies change. SQLite is a native dependency, so after installing it you must rebuild the app; a Metro reload alone is not enough.
 
 ### Run locally
 
@@ -73,7 +84,9 @@ For Xcode development, open `ios/RevsRotation.xcworkspace`.
 | Path | Purpose |
 | --- | --- |
 | `index.js` | Registers the app with React Native. |
-| `app/index.tsx` | Owns the list data and navigation stack. |
+| `app/index.tsx` | Configures the navigation stack. |
+| `app/StoredListScreen.tsx` | Loads each list on focus and handles saving and errors. |
+| `app/storage/` | Opens SQLite, initializes the schema, and saves list changes atomically. |
 | `app/ListScreen/index.tsx` | Displays a list, its header, and the add-item controls. |
 | `app/ListScreen/views.ts` | Defines the list screen styles. |
 | `app/types.ts` | Defines each node's ID, name, and children. |
@@ -81,7 +94,7 @@ For Xcode development, open `ios/RevsRotation.xcworkspace`.
 | `__tests__/utils.test.ts` | Checks ID uniqueness and path behavior. |
 | `ios/` and `android/` | Native platform projects. |
 
-Navigation paths contain child IDs from the root to the selected item. The root path is empty. Leaf paths use the same format, and an empty root produces no leaf paths.
+Navigation paths contain child IDs from the root to the selected item. The root path is empty. Only the final ID is needed to load a list from SQLite. The older tree utilities remain available for tests and future work; startup no longer walks the whole tree.
 
 ## Checks
 
@@ -99,8 +112,16 @@ yarn lint
 yarn tsc --noEmit
 ```
 
-The starter render test in `__tests__/App.test.tsx` still imports the old `../App` entry point and needs updating before the full test suite can pass.
+Run the storage integration tests with Node.js 22.13+ (or Node.js 23.4+) for its built-in SQLite module:
+
+```sh
+yarn test:storage
+```
+
+These tests use the repository's actual SQL against temporary SQLite databases, covering reopening, stable IDs, ordering, descendant deletion, rollback, and indexed sublist loading. Jest tests cover the list controls and storage loading/error states. Neither replaces a native device or simulator check.
+
+After your next native build, create nested lists, rename and reorder items, close and reopen the app, then delete a parent and confirm its descendants are gone while other branches remain.
 
 ## Planned next steps
 
-- Develop rotation behavior using the leaf-item paths.
+- Develop rotation behavior backed by database queries.
