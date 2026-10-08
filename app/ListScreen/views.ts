@@ -11,10 +11,29 @@ export const styles = StyleSheet.create({
       flex: 1,
       margin: 20,
     },
-    header: { 
+    headerRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      minHeight: 44,
+      marginBottom: 10,
+    },
+    headerSide: {
+      width: 72,
+    },
+    backButton: {
+      minHeight: 44,
+      justifyContent: 'center',
+      alignItems: 'flex-start',
+    },
+    backButtonText: {
+      fontSize: 17,
+      color: '#007AFF',
+    },
+    header: {
+      flex: 1,
+      textAlign: 'center',
       fontSize: 18, 
-      fontWeight: '600', 
-      marginBottom: 10 
+      fontWeight: '600',
     },
     listItem: {
       padding: 12,

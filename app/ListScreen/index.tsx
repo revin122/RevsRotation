@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { KeyboardAvoidingView, Platform, Text, FlatList, Button, TouchableOpacity, TextInput, StatusBar } from 'react-native'
+import { KeyboardAvoidingView, Platform, View, Text, FlatList, Button, TouchableOpacity, TextInput, StatusBar } from 'react-native'
 import { Node } from '../types'
 import { createNode, getNodeAtPath } from '../utils'
 import { produce } from 'immer'
@@ -59,8 +59,24 @@ const ListScreen: React.FC<Props> = ({
           <StatusBar
             hidden={true}
           />
-          {!isRoot && <Button title='Back' onPress={onBack} />}
-          <Text style={styles.header}>{isRoot ? 'Main' : current.name}</Text>
+          <View style={styles.headerRow}>
+            <View style={styles.headerSide}>
+              {!isRoot && (
+                <TouchableOpacity
+                  style={styles.backButton}
+                  onPress={onBack}
+                  accessibilityRole="button"
+                  accessibilityLabel="Back"
+                >
+                  <Text style={styles.backButtonText}>‹ Back</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+            <Text style={styles.header} numberOfLines={1} accessibilityRole="header">
+              {isRoot ? 'Main' : current.name}
+            </Text>
+            <View style={styles.headerSide} />
+          </View>
 
           <FlatList
             style={styles.list}
