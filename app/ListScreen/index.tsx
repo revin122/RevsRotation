@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { View, Text, FlatList, Button, TouchableOpacity, TextInput, StatusBar } from 'react-native'
+import { KeyboardAvoidingView, Platform, Text, FlatList, Button, TouchableOpacity, TextInput, StatusBar } from 'react-native'
 import { Node } from '../types'
 import { createNode, getNodeAtPath } from '../utils'
 import { produce } from 'immer'
@@ -51,37 +51,44 @@ const ListScreen: React.FC<Props> = ({
 
   return (
     <SafeAreaProvider>
-      <SafeAreaView style={styles.container}>
-        <StatusBar
-          hidden={true}
-        />
-        {!isRoot && <Button title='Back' onPress={onBack} />}
-        <Text style={styles.header}>{isRoot ? 'Main' : current.name}</Text>
+      <KeyboardAvoidingView
+        style={styles.keyboardContainer}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+        <SafeAreaView style={styles.container}>
+          <StatusBar
+            hidden={true}
+          />
+          {!isRoot && <Button title='Back' onPress={onBack} />}
+          <Text style={styles.header}>{isRoot ? 'Main' : current.name}</Text>
 
-        <FlatList
-          data={current.children}
-          keyExtractor={item => item.id}
-          renderItem={({ item }) => (
-            <TouchableOpacity
-              style={styles.listItem}
-              onPress={() => onNavigate([...path, item.id])}
-            >
-              <Text>
-                {item.name}
-              </Text>
-            </TouchableOpacity>
-          )}
-        />
+          <FlatList
+            style={styles.list}
+            keyboardShouldPersistTaps="handled"
+            data={current.children}
+            keyExtractor={item => item.id}
+            renderItem={({ item }) => (
+              <TouchableOpacity
+                style={styles.listItem}
+                onPress={() => onNavigate([...path, item.id])}
+              >
+                <Text>
+                  {item.name}
+                </Text>
+              </TouchableOpacity>
+            )}
+          />
 
-        <TextInput
-          style={styles.input}
-          placeholder="Enter item text"
-          value={newText}
-          onChangeText={setNewText}
-        />
-        <Button title="+ Add Item" onPress={addSublist} />
+          <TextInput
+            style={styles.input}
+            placeholder="Enter item text"
+            value={newText}
+            onChangeText={setNewText}
+          />
+          <Button title="+ Add Item" onPress={addSublist} />
 
-      </SafeAreaView>
+        </SafeAreaView>
+      </KeyboardAvoidingView>
     </SafeAreaProvider>
   )
 }
