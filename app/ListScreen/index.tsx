@@ -23,6 +23,10 @@ import ReorderHandle from './ReorderHandle';
 type Props = {
   data: ListData;
   busy?: boolean;
+  onCopy?: () => void;
+  onPaste?: () => void;
+  canPaste?: boolean;
+  copiedListName?: string;
   path: string[];
   onDataUpdate: (newData: ListData) => Promise<boolean>;
   onNavigate: (newPath: string[]) => void;
@@ -33,6 +37,10 @@ type Props = {
 const ListScreen: React.FC<Props> = ({
   data,
   busy = false,
+  onCopy,
+  onPaste,
+  canPaste = false,
+  copiedListName,
   path,
   onDataUpdate,
   onNavigate,
@@ -326,6 +334,32 @@ const ListScreen: React.FC<Props> = ({
             onPress={addSublist}
             disabled={!!drag || busy}
           />
+          <View style={styles.clipboardActions}>
+            {onCopy && (
+              <Button
+                title="Copy List"
+                onPress={onCopy}
+                disabled={busy || !!drag || current.children.length === 0}
+              />
+            )}
+            {onPaste && (
+              <Button
+                title="Paste"
+                onPress={onPaste}
+                disabled={busy || !!drag || !canPaste}
+                accessibilityLabel={
+                  copiedListName
+                    ? `Paste contents of ${copiedListName}`
+                    : 'Paste'
+                }
+              />
+            )}
+          </View>
+          {canPaste && (
+            <Text style={styles.editHint} numberOfLines={1}>
+              Copied: {copiedListName}
+            </Text>
+          )}
           <Modal
             visible={renameId !== null}
             transparent

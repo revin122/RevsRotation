@@ -103,3 +103,52 @@ test('failed saves preserve the displayed list; successful saves use persisted I
   expect(screen.root.findByType(ListScreen).props.data).toEqual(saved);
   await act(async () => screen.unmount());
 }, 30000);
+
+test('copy snapshot remains available after screen remount and paste shows committed contents', async () => {
+  const source = {
+    id: 'root',
+    name: 'Main',
+    children: [{ id: 'source-item', name: 'Item', hasChildren: false }],
+  };
+  const snapshot = {
+    sourceId: 'root',
+    name: 'Main',
+    items: [{ id: 'source-item', parentId: 'root', name: 'Item', position: 0 }],
+  };
+  const pasted = {
+    ...source,
+    children: [
+      ...source.children,
+      { id: 'new-id', name: 'Item', hasChildren: false },
+    ],
+  };
+  const copyList = jest.fn().mockResolvedValue(snapshot);
+  const pasteList = jest.fn().mockResolvedValue(pasted);
+  (getRepository as jest.Mock).mockResolvedValue({
+    loadList: jest.fn().mockResolvedValue(source),
+    copyList,
+    pasteList,
+  });
+  jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+  let screen!: TestRenderer.ReactTestRenderer;
+  await act(async () => {
+    screen = TestRenderer.create(<App />);
+  });
+  await flush();
+  await act(async () => {
+    await screen.root.findByType(ListScreen).props.onCopy();
+  });
+  expect(copyList).toHaveBeenCalledWith('root');
+  await act(async () => screen.unmount());
+  await act(async () => {
+    screen = TestRenderer.create(<App />);
+  });
+  await flush();
+  expect(screen.root.findByType(ListScreen).props.canPaste).toBe(true);
+  await act(async () => {
+    await screen.root.findByType(ListScreen).props.onPaste();
+  });
+  expect(pasteList).toHaveBeenCalledWith('root', snapshot);
+  expect(screen.root.findByType(ListScreen).props.data).toEqual(pasted);
+  await act(async () => screen.unmount());
+});

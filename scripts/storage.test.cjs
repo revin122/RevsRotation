@@ -144,3 +144,79 @@ test('loads only immediate children using the parent index and refuses future sc
     sqlite.close();
   }
 });
+
+test('copies a snapshot with new IDs, preserves nesting/order, appends, and rolls back invalid pastes', async () => {
+  const { sqlite, repo } = connect(':memory:');
+  try {
+    await repo.initialize();
+    let root = await repo.loadList('root');
+    root = await repo.saveChildren(root, [
+      draft('Source'),
+      draft('Destination'),
+    ]);
+    const [source, destination] = root.children;
+    let sourceList = await repo.loadList(source.id);
+    sourceList = await repo.saveChildren(sourceList, [
+      draft('First'),
+      draft('Second'),
+    ]);
+    const first = sourceList.children[0];
+    let nested = await repo.loadList(first.id);
+    await repo.saveChildren(nested, [draft('Grandchild')]);
+    const copied = await repo.copyList(source.id);
+    // Pasting into a descendant must remain finite and not introduce references.
+    const descendantPaste = await repo.pasteList(first.id, copied);
+    assert.deepEqual(
+      descendantPaste.children.map(item => item.name),
+      ['Grandchild', 'First', 'Second'],
+    );
+    const freshNested = await repo.loadList(descendantPaste.children[1].id);
+    assert.deepEqual(
+      freshNested.children.map(item => item.name),
+      ['Grandchild'],
+    );
+    let dest = await repo.loadList(destination.id);
+    dest = await repo.saveChildren(dest, [draft('Existing')]);
+    // A snapshot remains usable after deleting its source.
+    root = await repo.loadList('root');
+    await repo.saveChildren(
+      root,
+      root.children.filter(item => item.id !== source.id),
+    );
+    dest = await repo.pasteList(destination.id, copied);
+    assert.deepEqual(
+      dest.children.map(item => item.name),
+      ['Existing', 'First', 'Second'],
+    );
+    const originalIds = new Set(copied.items.map(item => item.id));
+    const copiedAgain = await repo.copyList(destination.id);
+    assert.ok(copiedAgain.items.every(item => !originalIds.has(item.id)));
+    assert.equal(
+      (await repo.loadList(dest.children[1].id)).children[0].name,
+      'Grandchild',
+    );
+    dest = await repo.pasteList(destination.id, copied);
+    assert.deepEqual(
+      dest.children.map(item => item.name),
+      ['Existing', 'First', 'Second', 'First', 'Second'],
+    );
+    const count = sqlite.prepare('SELECT COUNT(*) AS n FROM items').get().n;
+    await assert.rejects(
+      repo.pasteList(destination.id, {
+        ...copied,
+        items: [
+          ...copied.items,
+          { id: 'bad', parentId: 'missing', name: 'Invalid', position: 0 },
+        ],
+      }),
+    );
+    assert.equal(
+      sqlite.prepare('SELECT COUNT(*) AS n FROM items').get().n,
+      count,
+    );
+    await assert.rejects(repo.pasteList('missing', copied), /destination/);
+    assert.deepEqual(sqlite.prepare('PRAGMA foreign_key_check').all(), []);
+  } finally {
+    sqlite.close();
+  }
+});

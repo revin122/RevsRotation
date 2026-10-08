@@ -42,6 +42,12 @@ export const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'flex-end',
   },
+  clipboardActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 12,
+    marginBottom: 8,
+  },
   editHint: { color: '#555', marginBottom: 8 },
   row: { height: ROW_HEIGHT, paddingVertical: 4 },
   draggedRow: { zIndex: 10, elevation: 5, opacity: 0.9 },

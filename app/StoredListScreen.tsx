@@ -12,6 +12,7 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import ListScreen from './ListScreen';
 import { ListData } from './types';
 import { getRepository } from './storage';
+import { setCopiedList, useCopiedList } from './listClipboard';
 import { ROOT_ID } from './storage/repository';
 
 export type RootStackParamList = { RevRotation: { path: string[] } };
@@ -20,6 +21,7 @@ export default function StoredListScreen({
   navigation,
   route,
 }: NativeStackScreenProps<RootStackParamList, 'RevRotation'>) {
+  const clipboard = useCopiedList();
   const path = route.params.path;
   const id = path[path.length - 1] ?? ROOT_ID;
   const [data, setData] = useState<ListData | null>(null);
@@ -90,6 +92,35 @@ export default function StoredListScreen({
     }
   };
 
+  const copyOrPaste = async (operation: 'copy' | 'paste') => {
+    if (savingRef.current || !data) return;
+    const request = generation.current;
+    savingRef.current = true;
+    setSaving(true);
+    try {
+      const repo = await getRepository();
+      if (operation === 'copy') {
+        const snapshot = await repo.copyList(id);
+        setCopiedList(snapshot);
+        Alert.alert(
+          'List copied',
+          'Open another list or sublist and tap Paste. Its existing items will be kept.',
+        );
+      } else if (clipboard) {
+        const saved = await repo.pasteList(id, clipboard);
+        if (request === generation.current) setData(saved);
+      }
+    } catch (reason) {
+      Alert.alert(
+        operation === 'copy' ? 'Could not copy list' : 'Could not paste list',
+        reason instanceof Error ? reason.message : 'Please try again.',
+      );
+    } finally {
+      savingRef.current = false;
+      setSaving(false);
+    }
+  };
+
   if (loading || error || !data) {
     return (
       <View style={styles.status}>
@@ -122,6 +153,10 @@ export default function StoredListScreen({
         path={path}
         isRoot={path.length === 0}
         busy={saving}
+        copiedListName={clipboard?.name}
+        canPaste={!!clipboard?.items.length}
+        onCopy={() => copyOrPaste('copy')}
+        onPaste={() => copyOrPaste('paste')}
         onDataUpdate={save}
         onBack={() => navigation.goBack()}
         onNavigate={newPath =>
@@ -130,7 +165,7 @@ export default function StoredListScreen({
       />
       {saving && (
         <View style={styles.saving} pointerEvents="none">
-          <Text>Saving…</Text>
+          <Text>Working…</Text>
         </View>
       )}
     </View>

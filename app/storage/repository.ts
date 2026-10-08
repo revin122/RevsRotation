@@ -16,6 +16,12 @@ export type SqlDatabase = SqlExecutor & {
 
 export const ROOT_ID = 'root';
 
+export type CopiedList = {
+  sourceId: string;
+  name: string;
+  items: { id: string; parentId: string; name: string; position: number }[];
+};
+
 export class ListRepository {
   constructor(private db: SqlDatabase) {}
 
@@ -84,6 +90,72 @@ export class ListRepository {
       list = await this.readList(tx, id);
     });
     return list;
+  }
+
+  async copyList(id: string): Promise<CopiedList> {
+    let copied!: CopiedList;
+    await this.db.transaction(async tx => {
+      const source = (
+        await tx.execute('SELECT name FROM items WHERE id = ?', [id])
+      ).rows[0];
+      if (!source) throw new Error('This list no longer exists.');
+      const result = await tx.execute(
+        `WITH RECURSIVE descendants AS (
+        SELECT id, parent_id, name, position, 0 AS depth FROM items WHERE parent_id = ?
+        UNION ALL
+        SELECT child.id, child.parent_id, child.name, child.position, parent.depth + 1
+        FROM items child JOIN descendants parent ON child.parent_id = parent.id
+      ) SELECT * FROM descendants ORDER BY depth, position, id`,
+        [id],
+      );
+      copied = {
+        sourceId: id,
+        name: String(source.name),
+        items: result.rows.map(row => ({
+          id: String(row.id),
+          parentId: String(row.parent_id),
+          name: String(row.name),
+          position: Number(row.position),
+        })),
+      };
+    });
+    return copied;
+  }
+
+  async pasteList(
+    destinationId: string,
+    copied: CopiedList,
+  ): Promise<ListData> {
+    let saved!: ListData;
+    await this.db.transaction(async tx => {
+      if (!(await this.readList(tx, destinationId)))
+        throw new Error('The destination list no longer exists.');
+      const offset = Number(
+        (
+          await tx.execute(
+            'SELECT COALESCE(MAX(position) + 1, 0) AS offset FROM items WHERE parent_id = ?',
+            [destinationId],
+          )
+        ).rows[0].offset,
+      );
+      const ids = new Map<string, string>([[copied.sourceId, destinationId]]);
+      for (const item of copied.items) {
+        const parentId = ids.get(item.parentId);
+        if (!parentId || ids.has(item.id))
+          throw new Error('The copied list is invalid. Copy it again.');
+        const result = await tx.execute(
+          'INSERT INTO items(parent_id, name, position) VALUES (?, ?, ?) RETURNING id',
+          [
+            parentId,
+            item.name,
+            item.position + (item.parentId === copied.sourceId ? offset : 0),
+          ],
+        );
+        ids.set(item.id, String(result.rows[0].id));
+      }
+      saved = (await this.readList(tx, destinationId))!;
+    });
+    return saved;
   }
 
   // Diff only the current list. Unchanged rows and deeper sublists are untouched.
