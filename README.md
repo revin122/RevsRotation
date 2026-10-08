@@ -10,9 +10,10 @@ The current version focuses on creating and browsing this list structure. It als
 - Tap an item to open its children and use Back to return to the parent list.
 - View the current list title in a centered header with Back on the left.
 - Keep the text field and Add Item button above the virtual keyboard.
+- Use Edit mode to rename items, confirm deletion of items or entire sublists, and drag handles to reorder within a list.
 - Identify items using stable IDs for list rendering and navigation, rather than array positions.
 
-Data is currently held in memory and resets when the app restarts or fully reloads. Saving lists, renaming, deleting, drag-to-reorder, and rotation controls are not implemented yet.
+Data is currently held in memory and resets when the app restarts or fully reloads. Saving lists and rotation controls are not implemented yet.
 
 ## Using the app
 
@@ -20,6 +21,9 @@ Data is currently held in memory and resets when the app restarts or fully reloa
 2. Tap the new item to open its sublist.
 3. Add more items inside it to build a hierarchy.
 4. Tap **Back** to return to the previous list.
+5. Tap **Edit** to rename an item by tapping its name, delete with the red control, or drag **≡** up or down. Tap **Done** to resume browsing.
+
+For long lists, release the handle before scrolling to another section. Dragging does not automatically scroll the list.
 
 ## Development setup
 
@@ -95,10 +99,8 @@ yarn lint
 yarn tsc --noEmit
 ```
 
-The repository still includes starter code in `app/Appbck.tsx` and a starter render test in `__tests__/App.test.tsx`. The backup screen has a known `NewAppScreen` JSX type error, and the starter test imports the old `../App` entry point. These need cleanup before the full checks can be expected to pass.
+The starter render test in `__tests__/App.test.tsx` still imports the old `../App` entry point and needs updating before the full test suite can pass.
 
 ## Planned next steps
 
-- Add Edit mode with rename and delete actions, including confirmation when deleting a sublist.
-- Add drag-to-reorder within the current list.
 - Develop rotation behavior using the leaf-item paths.

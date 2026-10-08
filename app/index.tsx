@@ -36,7 +36,7 @@ export default function App() {
       <Stack.Navigator>
         <Stack.Screen
           name='RevRotation'
-          component={({
+          children={({
             navigation,
             route
           }: NativeStackScreenProps<RootStackParamList, 'RevRotation'>) => (

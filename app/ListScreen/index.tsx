@@ -1,19 +1,33 @@
-import React, { useState } from 'react'
-import { KeyboardAvoidingView, Platform, View, Text, FlatList, Button, TouchableOpacity, TextInput, StatusBar } from 'react-native'
-import { Node } from '../types'
-import { createNode, getNodeAtPath } from '../utils'
-import { produce } from 'immer'
-import { styles } from './views'
-import {SafeAreaView, SafeAreaProvider} from 'react-native-safe-area-context'
+import React, { useState } from 'react';
+import {
+  Alert,
+  Keyboard,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  View,
+  Text,
+  FlatList,
+  Button,
+  TouchableOpacity,
+  TextInput,
+  StatusBar,
+} from 'react-native';
+import { Node } from '../types';
+import { createNode, getNodeAtPath } from '../utils';
+import { produce } from 'immer';
+import { styles, ROW_HEIGHT } from './views';
+import { SafeAreaView, SafeAreaProvider } from 'react-native-safe-area-context';
+import ReorderHandle from './ReorderHandle';
 
 type Props = {
-  data: Node
-  path: string[]
-  onDataUpdate: (newData: Node) => void
-  onNavigate: (newPath: string[]) => void
-  onBack: () => void
-  isRoot: boolean
-}
+  data: Node;
+  path: string[];
+  onDataUpdate: (newData: Node) => void;
+  onNavigate: (newPath: string[]) => void;
+  onBack: () => void;
+  isRoot: boolean;
+};
 
 const ListScreen: React.FC<Props> = ({
   data,
@@ -23,31 +37,83 @@ const ListScreen: React.FC<Props> = ({
   onBack,
   isRoot,
 }) => {
-  const current = getNodeAtPath(data, path)
-  const [newText, setNewText] = useState('')
+  const current = getNodeAtPath(data, path);
+  const [newText, setNewText] = useState('');
+  const [editing, setEditing] = useState(false);
+  const [renameId, setRenameId] = useState<string | null>(null);
+  const [renameText, setRenameText] = useState('');
+  const [drag, setDrag] = useState<{ id: string; distance: number } | null>(
+    null,
+  );
 
-  // if (current.type !== 'list') return null
-
-  // const addItem = () => {
-  //   if (!newText.trim()) return
-  //   const updated = produce(data, (draft) => {
-  //     const node = getNodeAtPath(draft, path)
-  //     if (node.type === 'list') {
-  //       node.children.push({ type: 'item', value: newText })
-  //     }
-  //   })
-  //   onDataUpdate(updated)
-  //   setNewText('')
-  // }
+  const updateChildren = (update: (children: Node[]) => void) => {
+    onDataUpdate(
+      produce(data, draft => update(getNodeAtPath(draft, path).children)),
+    );
+  };
 
   const addSublist = () => {
-    if (!newText.trim()) return
-    const updated = produce(data, (draft) => {
-      const node = getNodeAtPath(draft, path)
-      node.children.push(createNode(newText));
-    })
-    onDataUpdate(updated)
-  }
+    if (!newText.trim()) return;
+    updateChildren(children => {
+      children.push(createNode(newText.trim()));
+    });
+    setNewText('');
+  };
+
+  const rename = () => {
+    if (!renameText.trim() || !renameId) return;
+    updateChildren(children => {
+      const item = children.find(child => child.id === renameId);
+      if (item) item.name = renameText.trim();
+    });
+    setRenameId(null);
+  };
+
+  const confirmDelete = (item: Node) => {
+    Alert.alert(
+      `Delete “${item.name}”?`,
+      item.children.length > 0
+        ? 'This will delete this sublist and all items inside it. This cannot be undone.'
+        : 'This item will be deleted. This cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => {
+            updateChildren(children => {
+              const index = children.findIndex(child => child.id === item.id);
+              if (index >= 0) children.splice(index, 1);
+            });
+          },
+        },
+      ],
+    );
+  };
+
+  const moveItem = (id: string, steps: number) => {
+    if (steps === 0) return;
+    updateChildren(children => {
+      const from = children.findIndex(item => item.id === id);
+      if (from < 0) return;
+      const to = Math.max(0, Math.min(children.length - 1, from + steps));
+      const [item] = children.splice(from, 1);
+      children.splice(to, 0, item);
+    });
+  };
+
+  const dragFrom = drag
+    ? current.children.findIndex(item => item.id === drag.id)
+    : -1;
+  const dragTo = drag
+    ? Math.max(
+        0,
+        Math.min(
+          current.children.length - 1,
+          dragFrom + Math.round(drag.distance / ROW_HEIGHT),
+        ),
+      )
+    : -1;
 
   return (
     <SafeAreaProvider>
@@ -56,15 +122,14 @@ const ListScreen: React.FC<Props> = ({
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <SafeAreaView style={styles.container}>
-          <StatusBar
-            hidden={true}
-          />
+          <StatusBar hidden />
           <View style={styles.headerRow}>
             <View style={styles.headerSide}>
               {!isRoot && (
                 <TouchableOpacity
                   style={styles.backButton}
                   onPress={onBack}
+                  disabled={!!drag}
                   accessibilityRole="button"
                   accessibilityLabel="Back"
                 >
@@ -72,43 +137,171 @@ const ListScreen: React.FC<Props> = ({
                 </TouchableOpacity>
               )}
             </View>
-            <Text style={styles.header} numberOfLines={1} accessibilityRole="header">
+            <Text
+              style={styles.header}
+              numberOfLines={1}
+              accessibilityRole="header"
+            >
               {isRoot ? 'Main' : current.name}
             </Text>
-            <View style={styles.headerSide} />
+            <View style={styles.headerSide}>
+              {(current.children.length > 0 || editing) && (
+                <TouchableOpacity
+                  style={styles.editButton}
+                  disabled={!!drag}
+                  accessibilityRole="button"
+                  onPress={() => {
+                    Keyboard.dismiss();
+                    setEditing(!editing);
+                  }}
+                >
+                  <Text style={styles.backButtonText}>
+                    {editing ? 'Done' : 'Edit'}
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </View>
           </View>
-
+          {editing && (
+            <Text style={styles.editHint}>
+              Tap a name to rename. Drag ≡ to reorder.
+            </Text>
+          )}
           <FlatList
             style={styles.list}
             keyboardShouldPersistTaps="handled"
+            scrollEnabled={!drag}
             data={current.children}
+            extraData={{ editing, drag }}
             keyExtractor={item => item.id}
-            renderItem={({ item }) => (
-              <TouchableOpacity
-                style={styles.listItem}
-                onPress={() => onNavigate([...path, item.id])}
-              >
-                <Text>
-                  {item.name}
-                </Text>
-              </TouchableOpacity>
-            )}
+            getItemLayout={(_, index) => ({
+              length: ROW_HEIGHT,
+              offset: ROW_HEIGHT * index,
+              index,
+            })}
+            renderItem={({ item, index }) => {
+              const active = drag?.id === item.id;
+              const shift = active
+                ? drag.distance
+                : drag && index > dragFrom && index <= dragTo
+                ? -ROW_HEIGHT
+                : drag && index < dragFrom && index >= dragTo
+                ? ROW_HEIGHT
+                : 0;
+              return (
+                <View
+                  style={[
+                    styles.row,
+                    active && styles.draggedRow,
+                    { transform: [{ translateY: shift }] },
+                  ]}
+                >
+                  <View style={styles.listItem}>
+                    {editing && (
+                      <TouchableOpacity
+                        style={styles.rowControl}
+                        disabled={!!drag}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Delete ${item.name}`}
+                        onPress={() => confirmDelete(item)}
+                      >
+                        <Text style={styles.deleteText}>⊖</Text>
+                      </TouchableOpacity>
+                    )}
+                    <TouchableOpacity
+                      style={styles.itemName}
+                      disabled={!!drag}
+                      accessibilityRole="button"
+                      accessibilityLabel={`${editing ? 'Rename' : 'Open'} ${
+                        item.name
+                      }`}
+                      onPress={() => {
+                        if (editing) {
+                          setRenameText(item.name);
+                          setRenameId(item.id);
+                        } else onNavigate([...path, item.id]);
+                      }}
+                    >
+                      <Text numberOfLines={1}>{item.name}</Text>
+                    </TouchableOpacity>
+                    {editing && (
+                      <ReorderHandle
+                        name={item.name}
+                        onStart={() => {
+                          Keyboard.dismiss();
+                          setDrag({ id: item.id, distance: 0 });
+                        }}
+                        onMove={distance =>
+                          setDrag({
+                            id: item.id,
+                            distance: Math.max(
+                              -index * ROW_HEIGHT,
+                              Math.min(
+                                (current.children.length - 1 - index) *
+                                  ROW_HEIGHT,
+                                distance,
+                              ),
+                            ),
+                          })
+                        }
+                        onEnd={distance => {
+                          moveItem(item.id, Math.round(distance / ROW_HEIGHT));
+                          setDrag(null);
+                        }}
+                        onCancel={() => setDrag(null)}
+                        onStep={direction => moveItem(item.id, direction)}
+                      />
+                    )}
+                  </View>
+                </View>
+              );
+            }}
           />
-
           <TextInput
             style={styles.input}
             placeholder="Enter item text"
             value={newText}
             onChangeText={setNewText}
+            editable={!drag}
           />
-          <Button title="+ Add Item" onPress={addSublist} />
-
+          <Button title="+ Add Item" onPress={addSublist} disabled={!!drag} />
+          <Modal
+            visible={renameId !== null}
+            transparent
+            animationType="fade"
+            onRequestClose={() => setRenameId(null)}
+          >
+            <KeyboardAvoidingView
+              style={styles.modalOverlay}
+              behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            >
+              <View style={styles.dialog} accessibilityViewIsModal>
+                <Text style={styles.dialogTitle}>Rename item</Text>
+                <TextInput
+                  style={styles.input}
+                  value={renameText}
+                  onChangeText={setRenameText}
+                  autoFocus
+                  selectTextOnFocus
+                  accessibilityLabel="Item name"
+                  returnKeyType="done"
+                  onSubmitEditing={rename}
+                />
+                <View style={styles.dialogButtons}>
+                  <Button title="Cancel" onPress={() => setRenameId(null)} />
+                  <Button
+                    title="Save"
+                    onPress={rename}
+                    disabled={!renameText.trim()}
+                  />
+                </View>
+              </View>
+            </KeyboardAvoidingView>
+          </Modal>
         </SafeAreaView>
       </KeyboardAvoidingView>
     </SafeAreaProvider>
-  )
-}
-
-
+  );
+};
 
 export default ListScreen;
