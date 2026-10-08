@@ -43,7 +43,7 @@ const ListScreen: React.FC<Props> = ({
   const [newText, setNewText] = useState('');
   const newItemInput = useRef<TextInput>(null);
   const inputGeneration = useRef(0);
-  const [inputReset, setInputReset] = useState({generation: 0, focus: false});
+  const [inputReset, setInputReset] = useState({ generation: 0, focus: false });
   const [editing, setEditing] = useState(false);
   const [renameId, setRenameId] = useState<string | null>(null);
   const [renameText, setRenameText] = useState('');
@@ -68,7 +68,10 @@ const ListScreen: React.FC<Props> = ({
       // events from the old input (for example keyboard composition events).
       inputGeneration.current += 1;
       setNewText('');
-      setInputReset({generation: inputGeneration.current, focus: restoreFocus});
+      setInputReset({
+        generation: inputGeneration.current,
+        focus: restoreFocus,
+      });
     }
   };
 
@@ -176,7 +179,8 @@ const ListScreen: React.FC<Props> = ({
           </View>
           {editing && (
             <Text style={styles.editHint}>
-              Tap a name to rename. Drag ≡ to reorder.
+              Tap a name to rename. Drag ≡ to reorder or use the arrow to move
+              to bottom.
             </Text>
           )}
           <FlatList
@@ -236,6 +240,39 @@ const ListScreen: React.FC<Props> = ({
                     >
                       <Text numberOfLines={1}>{item.name}</Text>
                     </TouchableOpacity>
+                    {editing && (
+                      <TouchableOpacity
+                        style={styles.rowControl}
+                        disabled={
+                          !!drag ||
+                          busy ||
+                          index === current.children.length - 1
+                        }
+                        accessibilityRole="button"
+                        accessibilityLabel={`Move ${item.name} to bottom`}
+                        accessibilityState={{
+                          disabled:
+                            !!drag ||
+                            busy ||
+                            index === current.children.length - 1,
+                        }}
+                        onPress={() =>
+                          moveItem(item.id, current.children.length - 1 - index)
+                        }
+                      >
+                        <Text
+                          style={[
+                            styles.moveBottomText,
+                            (busy ||
+                              !!drag ||
+                              index === current.children.length - 1) &&
+                              styles.disabledControl,
+                          ]}
+                        >
+                          ↓↓
+                        </Text>
+                      </TouchableOpacity>
+                    )}
                     {editing && (
                       <ReorderHandle
                         name={item.name}

@@ -78,6 +78,17 @@ test('edits, cancels deletion, deletes a subtree, reorders, and returns to brows
   });
   expect(data.children.map(item => item.id)).toEqual(['b', 'c', 'a']);
 
+  await press('Move Beta to bottom');
+  expect(data.children.map(item => item.id)).toEqual(['c', 'a', 'b']);
+  expect(
+    screen.root
+      .findAllByType(TouchableOpacity)
+      .find(node => node.props.accessibilityLabel === 'Move Beta to bottom')!
+      .props.disabled,
+  ).toBe(true);
+  await press('Move Gamma to bottom');
+  expect(data.children.map(item => item.id)).toEqual(['a', 'b', 'c']);
+
   const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
   await press('Delete Renamed');
   expect(alert.mock.calls[0][1]).toContain('all items inside');

@@ -66,6 +66,11 @@ export const styles = StyleSheet.create({
   },
   deleteText: { fontSize: 26, color: '#c62828' },
   handleText: { fontSize: 28, color: '#666' },
+  moveBottomText: {
+    fontSize: 13,
+    color: '#007AFF',
+  },
+  disabledControl: { opacity: 0.3 },
   modalOverlay: {
     flex: 1,
     justifyContent: 'center',
