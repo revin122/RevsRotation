@@ -42,6 +42,8 @@ const ListScreen: React.FC<Props> = ({
   const current = data;
   const [newText, setNewText] = useState('');
   const newItemInput = useRef<TextInput>(null);
+  const inputGeneration = useRef(0);
+  const [inputReset, setInputReset] = useState({generation: 0, focus: false});
   const [editing, setEditing] = useState(false);
   const [renameId, setRenameId] = useState<string | null>(null);
   const [renameText, setRenameText] = useState('');
@@ -56,14 +58,17 @@ const ListScreen: React.FC<Props> = ({
 
   const addSublist = async () => {
     if (!newText.trim()) return;
+    const restoreFocus = newItemInput.current?.isFocused() ?? false;
     const saved = await updateChildren(children => {
       const { id, name } = createNode(newText.trim());
       children.push({ id, name, hasChildren: false });
     });
     if (saved) {
-      // Keep the native input and controlled value in sync after the async save.
-      newItemInput.current?.clear();
+      // Replace the native input after saving, and ignore any delayed text
+      // events from the old input (for example keyboard composition events).
+      inputGeneration.current += 1;
       setNewText('');
+      setInputReset({generation: inputGeneration.current, focus: restoreFocus});
     }
   };
 
@@ -266,11 +271,17 @@ const ListScreen: React.FC<Props> = ({
             }}
           />
           <TextInput
+            key={inputReset.generation}
             ref={newItemInput}
+            autoFocus={inputReset.focus}
             style={styles.input}
             placeholder="Enter item text"
             value={newText}
-            onChangeText={setNewText}
+            onChangeText={text => {
+              if (inputReset.generation === inputGeneration.current) {
+                setNewText(text);
+              }
+            }}
             editable={!drag && !busy}
           />
           <Button

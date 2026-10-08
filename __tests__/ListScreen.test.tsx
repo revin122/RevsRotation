@@ -131,6 +131,8 @@ test.each([true, false])(
     await act(async () => {
       input().props.onChangeText('New item');
     });
+    const previousInput = input();
+    const delayedChange = previousInput.props.onChangeText;
     let pending!: Promise<void>;
     await act(async () => {
       pending = screen.root
@@ -145,6 +147,15 @@ test.each([true, false])(
       await pending;
     });
     expect(input().props.value).toBe(success ? '' : 'New item');
+    if (success) {
+      expect(input()).not.toBe(previousInput);
+      await act(async () => delayedChange('New item'));
+      expect(input().props.value).toBe('');
+      await act(async () => input().props.onChangeText('Next item'));
+      expect(input().props.value).toBe('Next item');
+    } else {
+      expect(input()).toBe(previousInput);
+    }
     await act(async () => screen.unmount());
   },
 );
