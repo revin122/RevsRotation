@@ -72,6 +72,13 @@ def enableProguardInReleaseBuilds = false
  */
 def jscFlavor = 'io.github.react-native-community:jsc-android:2026004.+'
 
+// Keep release credentials local; see keystore.properties.example.
+def releaseKeystoreProperties = new Properties()
+def releaseKeystoreFile = rootProject.file('keystore.properties')
+if (releaseKeystoreFile.exists()) {
+    releaseKeystoreFile.withInputStream { releaseKeystoreProperties.load(it) }
+}
+
 android {
     ndkVersion rootProject.ext.ndkVersion
     buildToolsVersion rootProject.ext.buildToolsVersion
@@ -86,6 +93,14 @@ android {
         versionName "1.0"
     }
     signingConfigs {
+        release {
+            if (releaseKeystoreFile.exists()) {
+                storeFile file(releaseKeystoreProperties['storeFile'])
+                storePassword releaseKeystoreProperties['storePassword']
+                keyAlias releaseKeystoreProperties['keyAlias']
+                keyPassword releaseKeystoreProperties['keyPassword']
+            }
+        }
         debug {
             storeFile file('debug.keystore')
             storePassword 'android'
@@ -98,9 +113,7 @@ android {
             signingConfig signingConfigs.debug
         }
         release {
-            // Caution! In production, you need to generate your own keystore file.
-            // see https://reactnative.dev/docs/signed-apk-android.
-            signingConfig signingConfigs.debug
+            signingConfig signingConfigs.release
             minifyEnabled enableProguardInReleaseBuilds
             proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
         }
