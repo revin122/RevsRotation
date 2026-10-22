@@ -142,10 +142,11 @@ const ListScreen: React.FC<Props> = ({
     <SafeAreaProvider>
       <KeyboardAvoidingView
         style={styles.keyboardContainer}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         <SafeAreaView style={styles.container}>
-          <StatusBar hidden />
+          {/* Android fullscreen prevents adjustResize from making room for the keyboard. */}
+          <StatusBar hidden={Platform.OS === 'ios'} />
           <View style={styles.headerRow}>
             <View style={styles.headerSide}>
               {!isRoot && (
