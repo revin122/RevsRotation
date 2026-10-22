@@ -15,6 +15,7 @@ export default function StoredListScreen(
   props: NativeStackScreenProps<RootStackParamList, 'RevRotation'>,
 ) {
   const {
+    notice,
     data,
     loading,
     error,
@@ -65,6 +66,13 @@ export default function StoredListScreen(
         onBack={back}
         onNavigate={navigate}
       />
+      {notice && (
+        <View style={styles.notice} pointerEvents="none">
+          <Text style={styles.noticeText} accessibilityLiveRegion="polite">
+            {notice}
+          </Text>
+        </View>
+      )}
       {saving && (
         <View style={styles.saving} pointerEvents="none">
           <Text>Working…</Text>
@@ -83,6 +91,16 @@ const styles = StyleSheet.create({
     padding: 24,
     gap: 12,
   },
+  notice: {
+    position: 'absolute',
+    top: 100,
+    alignSelf: 'center',
+    backgroundColor: '#333',
+    borderRadius: 20,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+  },
+  noticeText: { color: 'white' },
   saving: {
     position: 'absolute',
     top: 0,

@@ -9,7 +9,7 @@ The current version focuses on creating, editing, and saving nested lists locall
 - Add named items to the main list or any sublist.
 - Tap an item to open its children and use Back to return to the parent list.
 - View the current list title in a centered header with Back on the left.
-- Keep the text field and Add Item button above the virtual keyboard.
+- Keep the text field and + button above the virtual keyboard.
 - Use Edit mode to rename items, confirm deletion of items or entire sublists, and drag handles to reorder within a list.
 - Identify items using stable IDs for list rendering and navigation, rather than array positions.
 
@@ -28,19 +28,19 @@ Previous versions stored items only in memory, so there is no saved dataset to m
 
 ## Using the app
 
-1. On **Main**, enter a name and tap **+ Add Item**.
+1. On **Main**, enter a name and tap **+**.
 2. Tap the new item to open its sublist.
 3. Add more items inside it to build a hierarchy.
 4. Tap **Back** to return to the previous list.
-5. Tap **Edit** to rename an item by tapping its name, delete with the red control, or drag **≡** up or down. Tap **Done** to resume browsing.
+5. Open **⋯ → Edit List** to rename an item by tapping its name, delete with the red control, or drag **≡** up or down. Tap **Done** to resume browsing.
 
 For long lists, release the handle before scrolling to another section. Dragging does not automatically scroll the list.
 
 ## Copy and paste lists
 
-Tap **Copy List** to capture the current list's contents, including all nested items. Navigate to a destination list or sublist and tap **Paste**. Pasted items are appended in their original order, with new IDs, so edits and deletions do not affect the originals. The current list's title is not added as an extra container.
+Open **⋯ → Copy List** to capture the current list's contents, including all nested items. Navigate to a destination list or sublist and choose **⋯ → Paste List**. Pasted items are appended in their original order, with new IDs, so edits and deletions do not affect the originals. The current list's title is not added as an extra container.
 
-The clipboard holds a snapshot from the time you copied, can be pasted repeatedly, and is cleared when the app restarts. Paste saves the entire copy in one database transaction. Copying an empty list is disabled.
+The clipboard holds a snapshot from the time you copied, can be pasted repeatedly, and is cleared when the app restarts. Paste saves the entire copy in one database transaction. Copying an empty list is disabled. A brief “List copied” message confirms copying; Paste List is disabled until you copy something.
 
 ## Development setup
 
@@ -108,6 +108,7 @@ app/
     ListScreen/
       index.tsx                   # List layout and controls
       styles.ts                   # List screen styles and row dimensions
+      ListActionsMenu.tsx         # Edit, copy, and paste menu
       ReorderHandle.tsx           # Drag gesture and accessibility input
 ```
 

@@ -51,12 +51,8 @@ test('edits, cancels deletion, deletes a subtree, reorders, and returns to brows
         .props.onPress();
     });
   };
-  await act(async () => {
-    screen.root
-      .findAllByType(TouchableOpacity)
-      .find(node => !node.props.accessibilityLabel)!
-      .props.onPress();
-  });
+  await press('List actions');
+  await press('Edit List');
   await press('Rename Alpha');
   await act(async () => {
     screen.root
@@ -100,12 +96,7 @@ test('edits, cancels deletion, deletes a subtree, reorders, and returns to brows
   expect(data.children.map(item => item.id)).toEqual(['b', 'c']);
   alert.mockRestore();
 
-  await act(async () => {
-    screen.root
-      .findAllByType(TouchableOpacity)
-      .find(node => !node.props.accessibilityLabel)!
-      .props.onPress();
-  });
+  await press('Done editing');
   expect(screen.root.findAllByType(ReorderHandle)).toHaveLength(0);
   await press('Open Beta');
   expect(navigate).toHaveBeenCalledWith(['b']);
@@ -148,7 +139,7 @@ test.each([true, false])(
     await act(async () => {
       pending = screen.root
         .findAllByType(Button)
-        .find(button => button.props.title === '+ Add Item')!
+        .find(button => button.props.accessibilityLabel === 'Add item')!
         .props.onPress();
     });
     expect(input().props.value).toBe('New item');
@@ -170,3 +161,45 @@ test.each([true, false])(
     await act(async () => screen.unmount());
   },
 );
+
+test('list menu hides Edit for empty lists and enables paste only with a clipboard', async () => {
+  const onPaste = jest.fn();
+  let screen!: TestRenderer.ReactTestRenderer;
+  const render = (canPaste: boolean) => (
+    <ListScreen
+      data={{ id: 'root', name: 'Main', children: [] }}
+      path={[]}
+      isRoot
+      onBack={jest.fn()}
+      onNavigate={jest.fn()}
+      onDataUpdate={jest.fn()}
+      onPaste={onPaste}
+      onCopy={jest.fn()}
+      canPaste={canPaste}
+      copiedListName="Source"
+    />
+  );
+  await act(async () => {
+    screen = TestRenderer.create(render(false));
+  });
+  const action = (label: string) =>
+    screen.root
+      .findAllByType(TouchableOpacity)
+      .find(node => node.props.accessibilityLabel === label);
+  await act(async () => {
+    action('List actions')!.props.onPress();
+  });
+  expect(action('Edit List')).toBeUndefined();
+  expect(action('Copy List')!.props.disabled).toBe(true);
+  expect(action('Paste List')!.props.disabled).toBe(true);
+  await act(async () => {
+    screen.update(render(true));
+  });
+  expect(action('Paste List')!.props.disabled).toBe(false);
+  await act(async () => {
+    action('Paste List')!.props.onPress();
+  });
+  expect(onPaste).toHaveBeenCalledTimes(1);
+  expect(action('Paste List')).toBeUndefined();
+  await act(async () => screen.unmount());
+});

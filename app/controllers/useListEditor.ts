@@ -15,6 +15,7 @@ export function useListEditor(
   const inputGeneration = useRef(0);
   const [inputReset, setInputReset] = useState({ generation: 0, focus: false });
   const [editing, setEditing] = useState(false);
+  const [menuVisible, setMenuVisible] = useState(false);
   const [renameId, setRenameId] = useState<string | null>(null);
   const [renameText, setRenameText] = useState('');
   const [drag, setDrag] = useState<{ id: string; distance: number } | null>(
@@ -100,7 +101,13 @@ export function useListEditor(
       )
     : -1;
 
+  const showMenu = () => {
+    Keyboard.dismiss();
+    setMenuVisible(true);
+  };
+  const closeMenu = () => setMenuVisible(false);
   const toggleEditing = () => {
+    closeMenu();
     Keyboard.dismiss();
     setEditing(!editing);
   };
@@ -135,6 +142,9 @@ export function useListEditor(
     if (inputReset.generation === inputGeneration.current) setNewText(text);
   };
   return {
+    menuVisible,
+    showMenu,
+    closeMenu,
     current,
     newText,
     newItemInput,

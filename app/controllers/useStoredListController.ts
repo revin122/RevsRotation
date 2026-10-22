@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -14,6 +14,12 @@ export function useStoredListController({
   route,
 }: NativeStackScreenProps<RootStackParamList, 'RevRotation'>) {
   const clipboard = useCopiedList();
+  const [notice, setNotice] = useState<{ text: string } | null>(null);
+  useEffect(() => {
+    if (!notice) return;
+    const timer = setTimeout(() => setNotice(null), 2500);
+    return () => clearTimeout(timer);
+  }, [notice]);
   const path = route.params.path;
   const id = path[path.length - 1] ?? ROOT_ID;
   const [data, setData] = useState<ListData | null>(null);
@@ -94,10 +100,7 @@ export function useStoredListController({
       if (operation === 'copy') {
         const snapshot = await repo.copyList(id);
         setCopiedList(snapshot);
-        Alert.alert(
-          'List copied',
-          'Open another list or sublist and tap Paste. Its existing items will be kept.',
-        );
+        setNotice({ text: 'List copied' });
       } else if (clipboard) {
         const saved = await repo.pasteList(id, clipboard);
         if (request === generation.current) setData(saved);
@@ -114,6 +117,7 @@ export function useStoredListController({
   };
 
   return {
+    notice: notice?.text,
     data,
     loading,
     error,

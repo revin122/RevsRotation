@@ -16,6 +16,7 @@ import { useListEditor } from '../../controllers/useListEditor';
 import { ListScreenProps } from '../../types/listScreen';
 import { styles, ROW_HEIGHT } from './styles';
 import ReorderHandle from './ReorderHandle';
+import ListActionsMenu from './ListActionsMenu';
 
 const ListScreen: React.FC<ListScreenProps> = props => {
   const {
@@ -28,6 +29,9 @@ const ListScreen: React.FC<ListScreenProps> = props => {
     isRoot,
   } = props;
   const {
+    menuVisible,
+    showMenu,
+    closeMenu,
     current,
     newText,
     newItemInput,
@@ -57,7 +61,9 @@ const ListScreen: React.FC<ListScreenProps> = props => {
     <SafeAreaProvider>
       <KeyboardAvoidingView
         style={styles.keyboardContainer}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        // Android uses the activity's adjustResize; avoid a second height adjustment.
+        enabled={Platform.OS === 'ios'}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <SafeAreaView style={styles.container}>
           {/* Android fullscreen prevents adjustResize from making room for the keyboard. */}
@@ -84,18 +90,17 @@ const ListScreen: React.FC<ListScreenProps> = props => {
               {isRoot ? 'Main' : current.name}
             </Text>
             <View style={styles.headerSide}>
-              {(current.children.length > 0 || editing) && (
-                <TouchableOpacity
-                  style={styles.editButton}
-                  disabled={!!drag || busy}
-                  accessibilityRole="button"
-                  onPress={toggleEditing}
-                >
-                  <Text style={styles.backButtonText}>
-                    {editing ? 'Done' : 'Edit'}
-                  </Text>
-                </TouchableOpacity>
-              )}
+              <TouchableOpacity
+                style={styles.editButton}
+                disabled={!!drag || busy}
+                accessibilityRole="button"
+                accessibilityLabel={editing ? 'Done editing' : 'List actions'}
+                onPress={editing ? toggleEditing : showMenu}
+              >
+                <Text style={styles.backButtonText}>
+                  {editing ? 'Done' : '⋯'}
+                </Text>
+              </TouchableOpacity>
             </View>
           </View>
           {editing && (
@@ -154,7 +159,16 @@ const ListScreen: React.FC<ListScreenProps> = props => {
                       }`}
                       onPress={() => openItem(item)}
                     >
-                      <Text numberOfLines={1}>{item.name}</Text>
+                      <View style={styles.itemLabel}>
+                        <Text style={styles.itemTitle} numberOfLines={1}>
+                          {item.name}
+                        </Text>
+                        {!editing && (
+                          <Text style={styles.chevron} accessible={false}>
+                            ›
+                          </Text>
+                        )}
+                      </View>
                     </TouchableOpacity>
                     {editing && (
                       <TouchableOpacity
@@ -206,47 +220,35 @@ const ListScreen: React.FC<ListScreenProps> = props => {
               );
             }}
           />
-          <TextInput
-            key={inputReset.generation}
-            ref={newItemInput}
-            autoFocus={inputReset.focus}
-            style={styles.input}
-            placeholder="Enter item text"
-            value={newText}
-            onChangeText={changeNewText}
-            editable={!drag && !busy}
-          />
-          <Button
-            title="+ Add Item"
-            onPress={addSublist}
-            disabled={!!drag || busy}
-          />
-          <View style={styles.clipboardActions}>
-            {onCopy && (
-              <Button
-                title="Copy List"
-                onPress={onCopy}
-                disabled={busy || !!drag || current.children.length === 0}
-              />
-            )}
-            {onPaste && (
-              <Button
-                title="Paste"
-                onPress={onPaste}
-                disabled={busy || !!drag || !canPaste}
-                accessibilityLabel={
-                  copiedListName
-                    ? `Paste contents of ${copiedListName}`
-                    : 'Paste'
-                }
-              />
-            )}
+          <View style={styles.addRow}>
+            <TextInput
+              key={inputReset.generation}
+              ref={newItemInput}
+              autoFocus={inputReset.focus}
+              style={[styles.input, styles.addInput]}
+              placeholder="Enter item text"
+              value={newText}
+              onChangeText={changeNewText}
+              editable={!drag && !busy}
+            />
+            <Button
+              title="+"
+              accessibilityLabel="Add item"
+              onPress={addSublist}
+              disabled={!!drag || busy || !newText.trim()}
+            />
           </View>
-          {canPaste && (
-            <Text style={styles.editHint} numberOfLines={1}>
-              Copied: {copiedListName}
-            </Text>
-          )}
+          <ListActionsMenu
+            visible={menuVisible}
+            onClose={closeMenu}
+            canEdit={current.children.length > 0}
+            busy={busy || !!drag}
+            canPaste={canPaste}
+            copiedListName={copiedListName}
+            onEdit={toggleEditing}
+            onCopy={onCopy}
+            onPaste={onPaste}
+          />
           <Modal
             visible={renameId !== null}
             transparent
