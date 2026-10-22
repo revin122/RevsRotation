@@ -15,7 +15,7 @@ import { SafeAreaView, SafeAreaProvider } from 'react-native-safe-area-context';
 import { useListEditor } from '../../controllers/useListEditor';
 import { ListScreenProps } from '../../types/listScreen';
 import { styles, ROW_HEIGHT } from './styles';
-import ReorderHandle from './ReorderHandle';
+import ListRowItem from './ListRowItem';
 import ListActionsMenu from './ListActionsMenu';
 
 const ListScreen: React.FC<ListScreenProps> = props => {
@@ -122,104 +122,25 @@ const ListScreen: React.FC<ListScreenProps> = props => {
               offset: ROW_HEIGHT * index,
               index,
             })}
-            renderItem={({ item, index }) => {
-              const active = drag?.id === item.id;
-              const shift = active
-                ? drag.distance
-                : drag && index > dragFrom && index <= dragTo
-                ? -ROW_HEIGHT
-                : drag && index < dragFrom && index >= dragTo
-                ? ROW_HEIGHT
-                : 0;
-              return (
-                <View
-                  style={[
-                    styles.row,
-                    active && styles.draggedRow,
-                    { transform: [{ translateY: shift }] },
-                  ]}
-                >
-                  <View style={styles.listItem}>
-                    {editing && (
-                      <TouchableOpacity
-                        style={styles.rowControl}
-                        disabled={!!drag || busy}
-                        accessibilityRole="button"
-                        accessibilityLabel={`Delete ${item.name}`}
-                        onPress={() => confirmDelete(item)}
-                      >
-                        <Text style={styles.deleteText}>⊖</Text>
-                      </TouchableOpacity>
-                    )}
-                    <TouchableOpacity
-                      style={styles.itemName}
-                      disabled={!!drag || busy}
-                      accessibilityRole="button"
-                      accessibilityLabel={`${editing ? 'Rename' : 'Open'} ${
-                        item.name
-                      }`}
-                      onPress={() => openItem(item)}
-                    >
-                      <View style={styles.itemLabel}>
-                        <Text style={styles.itemTitle} numberOfLines={1}>
-                          {item.name}
-                        </Text>
-                        {!editing && (
-                          <Text style={styles.chevron} accessible={false}>
-                            ›
-                          </Text>
-                        )}
-                      </View>
-                    </TouchableOpacity>
-                    {editing && (
-                      <TouchableOpacity
-                        style={styles.rowControl}
-                        disabled={
-                          !!drag ||
-                          busy ||
-                          index === current.children.length - 1
-                        }
-                        accessibilityRole="button"
-                        accessibilityLabel={`Move ${item.name} to bottom`}
-                        accessibilityState={{
-                          disabled:
-                            !!drag ||
-                            busy ||
-                            index === current.children.length - 1,
-                        }}
-                        onPress={() =>
-                          moveItem(item.id, current.children.length - 1 - index)
-                        }
-                      >
-                        <Text
-                          style={[
-                            styles.moveBottomText,
-                            (busy ||
-                              !!drag ||
-                              index === current.children.length - 1) &&
-                              styles.disabledControl,
-                          ]}
-                        >
-                          ↓↓
-                        </Text>
-                      </TouchableOpacity>
-                    )}
-                    {editing && (
-                      <ReorderHandle
-                        name={item.name}
-                        onStart={() => startDrag(item.id)}
-                        onMove={distance =>
-                          updateDrag(item.id, index, distance)
-                        }
-                        onEnd={distance => finishDrag(item.id, distance)}
-                        onCancel={cancelDrag}
-                        onStep={direction => moveItem(item.id, direction)}
-                      />
-                    )}
-                  </View>
-                </View>
-              );
-            }}
+            renderItem={({ item, index }) => (
+              <ListRowItem
+                item={item}
+                index={index}
+                itemCount={current.children.length}
+                editing={editing}
+                busy={busy}
+                drag={drag}
+                dragFrom={dragFrom}
+                dragTo={dragTo}
+                confirmDelete={confirmDelete}
+                openItem={openItem}
+                moveItem={moveItem}
+                startDrag={startDrag}
+                updateDrag={updateDrag}
+                finishDrag={finishDrag}
+                cancelDrag={cancelDrag}
+              />
+            )}
           />
           <TouchableOpacity
             style={[
