@@ -31,7 +31,7 @@ Previous versions stored items only in memory, so there is no saved dataset to m
 1. On **Main**, enter a name and tap **+**.
 2. Tap the new item to open its sublist.
 3. Add more items inside it to build a hierarchy.
-4. Tap **Back** to return to the previous list.
+4. Tap **Back** to return to the previous list, or tap the sublist title **⌄** to open **Go to list** and jump to any parent. The current list is marked with a checkmark. Tap outside or Cancel to close the popup; Android Back also dismisses it.
 5. Open **⋯ → Edit List** to rename an item by tapping its name, delete with the red control, or drag **≡** up or down. Tap **Done** to resume browsing.
 
 For long lists, release the handle before scrolling to another section. Dragging does not automatically scroll the list.
@@ -154,5 +154,4 @@ After your next native build, create nested lists, rename and reorder items, clo
 
 ## Planned next steps
 
-- Add breadcrumb navigation.
 - Add import/export.

@@ -12,4 +12,5 @@ export type ListScreenProps = {
   onNavigate: (newPath: string[]) => void;
   onBack: () => void;
   isRoot: boolean;
+  onTitlePress?: () => void;
 };

@@ -10,10 +10,13 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../types/navigation';
 import { useStoredListController } from '../controllers/useStoredListController';
 import ListScreen from './ListScreen';
+import ListNavigationMenu from './ListScreen/ListNavigationMenu';
+import { useListNavigation } from '../controllers/useListNavigation';
 
 export default function StoredListScreen(
   props: NativeStackScreenProps<RootStackParamList, 'RevRotation'>,
 ) {
+  const listNavigation = useListNavigation(props);
   const {
     notice,
     data,
@@ -63,8 +66,18 @@ export default function StoredListScreen(
         onCopy={copy}
         onPaste={paste}
         onDataUpdate={save}
+        onTitlePress={listNavigation.open}
         onBack={back}
         onNavigate={navigate}
+      />
+      <ListNavigationMenu
+        visible={listNavigation.visible}
+        entries={listNavigation.entries}
+        loading={listNavigation.loading}
+        error={listNavigation.error}
+        onClose={listNavigation.close}
+        onRetry={listNavigation.open}
+        onSelect={listNavigation.select}
       />
       {notice && (
         <View style={styles.notice} pointerEvents="none">

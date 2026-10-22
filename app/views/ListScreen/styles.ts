@@ -31,6 +31,15 @@ export const styles = StyleSheet.create({
     fontSize: 17,
     color: '#007AFF',
   },
+  titleButton: {
+    flex: 1,
+    minHeight: 44,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  titleText: { flexShrink: 1, fontSize: 18, fontWeight: '600' },
+  titleChevron: { marginLeft: 6, fontSize: 18 },
   header: {
     flex: 1,
     textAlign: 'center',

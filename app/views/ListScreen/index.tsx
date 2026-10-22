@@ -27,6 +27,7 @@ const ListScreen: React.FC<ListScreenProps> = props => {
     copiedListName,
     onBack,
     isRoot,
+    onTitlePress,
   } = props;
   const {
     menuVisible,
@@ -83,13 +84,30 @@ const ListScreen: React.FC<ListScreenProps> = props => {
                 </TouchableOpacity>
               )}
             </View>
-            <Text
-              style={styles.header}
-              numberOfLines={1}
-              accessibilityRole="header"
-            >
-              {isRoot ? 'Main' : current.name}
-            </Text>
+            {isRoot ? (
+              <Text
+                style={styles.header}
+                numberOfLines={1}
+                accessibilityRole="header"
+              >
+                Main
+              </Text>
+            ) : (
+              <TouchableOpacity
+                style={styles.titleButton}
+                onPress={onTitlePress}
+                disabled={busy || !!drag}
+                accessibilityRole="button"
+                accessibilityLabel={`Open navigation for ${current.name}`}
+              >
+                <Text style={styles.titleText} numberOfLines={1}>
+                  {current.name}
+                </Text>
+                <Text style={styles.titleChevron} accessible={false}>
+                  ⌄
+                </Text>
+              </TouchableOpacity>
+            )}
             <View style={styles.headerSide}>
               <TouchableOpacity
                 style={styles.editButton}
