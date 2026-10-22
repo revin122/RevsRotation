@@ -42,6 +42,16 @@ export const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'flex-end',
   },
+  rotateButton: {
+    flexShrink: 0,
+    minHeight: 44,
+    marginTop: 10,
+    borderRadius: 6,
+    backgroundColor: '#007AFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  rotateButtonText: { color: 'white', fontSize: 17, fontWeight: '600' },
   addRow: {
     flexDirection: 'row',
     alignItems: 'center',

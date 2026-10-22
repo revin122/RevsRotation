@@ -203,3 +203,68 @@ test('list menu hides Edit for empty lists and enables paste only with a clipboa
   expect(action('Paste List')).toBeUndefined();
   await act(async () => screen.unmount());
 });
+
+test('ROTATE saves the first item at the bottom, preserving IDs and sublists', async () => {
+  let data: ListData = {
+    id: 'parent',
+    name: 'Sublist',
+    children: [
+      { id: 'a', name: 'Alpha', hasChildren: true },
+      { id: 'b', name: 'Beta', hasChildren: false },
+      { id: 'c', name: 'Gamma', hasChildren: false },
+    ],
+  };
+  const original = data.children;
+  let busy = false;
+  let screen!: TestRenderer.ReactTestRenderer;
+  const save = jest.fn(async (next: ListData) => {
+    data = next;
+    screen.update(render());
+    return true;
+  });
+  const render = () => (
+    <ListScreen
+      data={data}
+      path={['parent']}
+      isRoot={false}
+      busy={busy}
+      onBack={jest.fn()}
+      onNavigate={jest.fn()}
+      onDataUpdate={save}
+    />
+  );
+  await act(async () => {
+    screen = TestRenderer.create(render());
+  });
+  const button = () =>
+    screen.root
+      .findAllByType(TouchableOpacity)
+      .find(node => node.props.accessibilityLabel === 'ROTATE')!;
+  await act(async () => {
+    button().props.onPress();
+  });
+  expect(data.children).toEqual([original[1], original[2], original[0]]);
+  expect(data.id).toBe('parent');
+  busy = true;
+  await act(async () => {
+    screen.update(render());
+  });
+  expect(button().props.disabled).toBe(true);
+  await act(async () => {
+    button().props.onPress();
+  });
+  expect(save).toHaveBeenCalledTimes(1);
+  busy = false;
+  for (const children of [[], [original[0]]]) {
+    data = { ...data, children };
+    await act(async () => {
+      screen.update(render());
+    });
+    expect(button().props.disabled).toBe(true);
+    await act(async () => {
+      button().props.onPress();
+    });
+  }
+  expect(save).toHaveBeenCalledTimes(1);
+  await act(async () => screen.unmount());
+});

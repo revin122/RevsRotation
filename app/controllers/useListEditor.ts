@@ -88,6 +88,11 @@ export function useListEditor(
     });
   };
 
+  const rotate = () => {
+    if (busy || drag || current.children.length < 2) return;
+    moveItem(current.children[0].id, current.children.length - 1);
+  };
+
   const dragFrom = drag
     ? current.children.findIndex(item => item.id === drag.id)
     : -1;
@@ -159,6 +164,7 @@ export function useListEditor(
     rename,
     confirmDelete,
     moveItem,
+    rotate,
     toggleEditing,
     openItem,
     startDrag,

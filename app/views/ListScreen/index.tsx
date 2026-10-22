@@ -46,6 +46,7 @@ const ListScreen: React.FC<ListScreenProps> = props => {
     rename,
     confirmDelete,
     moveItem,
+    rotate,
     toggleEditing,
     openItem,
     startDrag,
@@ -220,6 +221,23 @@ const ListScreen: React.FC<ListScreenProps> = props => {
               );
             }}
           />
+          <TouchableOpacity
+            style={[
+              styles.rotateButton,
+              (busy || !!drag || current.children.length < 2) &&
+                styles.disabledControl,
+            ]}
+            accessibilityRole="button"
+            accessibilityLabel="ROTATE"
+            accessibilityHint="Moves the first item to the bottom of this list"
+            accessibilityState={{
+              disabled: busy || !!drag || current.children.length < 2,
+            }}
+            disabled={busy || !!drag || current.children.length < 2}
+            onPress={rotate}
+          >
+            <Text style={styles.rotateButtonText}>ROTATE</Text>
+          </TouchableOpacity>
           <View style={styles.addRow}>
             <TextInput
               key={inputReset.generation}

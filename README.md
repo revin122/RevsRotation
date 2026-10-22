@@ -1,8 +1,8 @@
 # RevsRotation
 
-RevsRotation is a React Native app for organizing items into nested lists, with a rotation feature planned for future development. Every item can contain its own sublist, letting you organize related items at multiple levels and navigate through them one list at a time.
+RevsRotation is a React Native app for organizing items into nested lists, with a rotation control. Every item can contain its own sublist, letting you organize related items at multiple levels and navigate through them one list at a time.
 
-The current version focuses on creating, editing, and saving nested lists locally. Rotation behavior is planned for a future version.
+The current version focuses on creating, editing, and saving nested lists locally. Tap ROTATE to move the first item to the bottom of the current list and save the order.
 
 ## Current features
 
@@ -13,7 +13,7 @@ The current version focuses on creating, editing, and saving nested lists locall
 - Use Edit mode to rename items, confirm deletion of items or entire sublists, and drag handles to reorder within a list.
 - Identify items using stable IDs for list rendering and navigation, rather than array positions.
 
-Lists are saved automatically in an on-device SQLite database (`revsrotation.sqlite`) using `@op-engineering/op-sqlite`. Data survives app restarts and reloads. Storage works offline; export/import and rotation controls are not implemented yet.
+Lists are saved automatically in an on-device SQLite database (`revsrotation.sqlite`) using `@op-engineering/op-sqlite`. Data survives app restarts and reloads. Storage works offline; export/import is not implemented yet.
 
 ## Local storage
 
@@ -154,4 +154,5 @@ After your next native build, create nested lists, rename and reorder items, clo
 
 ## Planned next steps
 
-- Develop rotation behavior backed by database queries.
+- Add breadcrumb navigation.
+- Add import/export.
