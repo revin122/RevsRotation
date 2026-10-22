@@ -1,9 +1,9 @@
 import React from 'react';
 import TestRenderer, { act } from 'react-test-renderer';
 import { Alert, Button, TouchableOpacity } from 'react-native';
-import ListScreen from '../app/ListScreen';
-import ReorderHandle from '../app/ListScreen/ReorderHandle';
-import { ListData } from '../app/types';
+import ListScreen from '../app/views/ListScreen';
+import ReorderHandle from '../app/views/ListScreen/ReorderHandle';
+import { ListData } from '../app/types/list';
 
 jest.mock('react-native-safe-area-context', () => {
   const { View } = require('react-native');

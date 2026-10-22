@@ -2,10 +2,10 @@ import React from 'react';
 import TestRenderer, { act } from 'react-test-renderer';
 import { Alert, Button } from 'react-native';
 import App from '../app/index';
-import ListScreen from '../app/ListScreen';
-import { getRepository } from '../app/storage';
+import ListScreen from '../app/views/ListScreen';
+import { getRepository } from '../app/models/storage';
 
-jest.mock('../app/storage', () => ({ getRepository: jest.fn() }));
+jest.mock('../app/models/storage', () => ({ getRepository: jest.fn() }));
 jest.mock('react-native-safe-area-context', () => {
   const { View } = require('react-native');
   return { SafeAreaProvider: View, SafeAreaView: View };

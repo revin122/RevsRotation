@@ -85,20 +85,43 @@ yarn android
 
 For Xcode development, open `ios/RevsRotation.xcworkspace`.
 
-## Project structure
+## Project structure (MVC style)
 
-| Path | Purpose |
-| --- | --- |
-| `index.js` | Registers the app with React Native. |
-| `app/index.tsx` | Configures the navigation stack. |
-| `app/StoredListScreen.tsx` | Loads each list on focus and handles saving and errors. |
-| `app/storage/` | Opens SQLite, initializes the schema, and saves list changes atomically. |
-| `app/ListScreen/index.tsx` | Displays a list, its header, and the add-item controls. |
-| `app/ListScreen/views.ts` | Defines the list screen styles. |
-| `app/types.ts` | Defines each node's ID, name, and children. |
-| `app/utils.tsx` | Creates nodes, resolves ID-based paths, and collects leaf paths. |
-| `__tests__/utils.test.ts` | Checks ID uniqueness and path behavior. |
-| `ios/` and `android/` | Native platform projects. |
+The app uses React hooks as controllers. Views render the interface and forward user actions; controllers coordinate those actions with the models.
+
+```text
+app/
+  index.tsx                       # App entry and navigation stack
+  types/                          # Data, routes, UI contracts, storage, and clipboard types
+  models/
+    tree.ts                       # Draft IDs and tree helpers
+    listClipboard.ts              # In-memory copy snapshot and subscriptions
+    storage/
+      index.ts                    # SQLite connection and initialization
+      repository.ts               # Queries, transactions, copy/paste, deletion
+  controllers/
+    useStoredListController.ts    # Loading, saving, retry, navigation, clipboard actions
+    useListEditor.ts              # Add, rename, delete, reorder, edit mode, input reset
+    useCopiedList.ts              # React subscription to the clipboard model
+  views/
+    StoredListScreen.tsx          # Loading/error/saving UI and screen wiring
+    ListScreen/
+      index.tsx                   # List layout and controls
+      styles.ts                   # List screen styles and row dimensions
+      ReorderHandle.tsx           # Drag gesture and accessibility input
+```
+
+**Model:** owns data, SQLite operations, and the clipboard snapshot. Models do not import React views or controller hooks.
+
+**Controller:** owns interaction state and coordinates persistence, navigation, and feedback. Database changes continue to go through the repository. Row height is supplied by the view to the editor controller so it does not depend on a stylesheet.
+
+**View:** owns JSX, styles, keyboard layout, and gesture presentation. Views call controller actions instead of updating the database directly. Small rendering calculations, such as row offsets during dragging, stay with the layout.
+
+For example: tapping **Add Item** calls the editor controller, which prepares the update and asks the storage controller to save it. The repository commits the transaction, the storage controller supplies the saved list, and the editor clears the input only after success.
+
+This refactor keeps the existing database schema and UI behavior. Further extraction of the header, item row, form, and dialogs into smaller view components is a separate follow-up.
+
+Tests in `__tests__/` cover the app/controller integration, editing, and tree helpers. `scripts/storage.test.cjs` exercises the model repository against real SQLite. Native projects remain in `ios/` and `android/`.
 
 Navigation paths contain child IDs from the root to the selected item. The root path is empty. Only the final ID is needed to load a list from SQLite. The older tree utilities remain available for tests and future work; startup no longer walks the whole tree.
 

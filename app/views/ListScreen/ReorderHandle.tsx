@@ -1,17 +1,10 @@
 import React, { useRef } from 'react';
 import { PanResponder, Text, View } from 'react-native';
-import { styles } from './views';
+import { styles } from './styles';
 
-type Props = {
-  name: string;
-  onStart: () => void;
-  onMove: (distance: number) => void;
-  onEnd: (distance: number) => void;
-  onCancel: () => void;
-  onStep: (direction: number) => void;
-};
+import type { ReorderHandleProps } from '../../types/reorderHandle';
 
-export default function ReorderHandle(props: Props) {
+export default function ReorderHandle(props: ReorderHandleProps) {
   const latest = useRef(props);
   latest.current = props;
   const responder = useRef(

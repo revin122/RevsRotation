@@ -6,7 +6,7 @@ const { tmpdir } = require('node:os');
 const { join } = require('node:path');
 const ts = require('typescript');
 const compiled = ts.transpileModule(
-  readFileSync(join(__dirname, '../app/storage/repository.ts'), 'utf8'),
+  readFileSync(join(__dirname, '../app/models/storage/repository.ts'), 'utf8'),
   {
     compilerOptions: {
       module: ts.ModuleKind.CommonJS,

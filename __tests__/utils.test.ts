@@ -1,4 +1,4 @@
-import { createNode, flattenLeafPaths, getNodeAtPath } from '../app/utils';
+import { createNode, flattenLeafPaths, getNodeAtPath } from '../app/models/tree';
 
 test('creates distinct IDs even for items added at the same time with the same name', () => {
   const clock = jest.spyOn(Date, 'now').mockReturnValue(1000);

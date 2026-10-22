@@ -1,5 +1,4 @@
-import { useSyncExternalStore } from 'react';
-import { CopiedList } from './storage/repository';
+import { CopiedList } from '../types/clipboard';
 
 // An app-local snapshot, retained while navigating but cleared on app restart.
 let copied: CopiedList | null = null;
@@ -8,12 +7,12 @@ export function setCopiedList(value: CopiedList) {
   copied = value;
   listeners.forEach(listener => listener());
 }
-function subscribe(listener: () => void) {
+export function subscribeToClipboard(listener: () => void) {
   listeners.add(listener);
   return () => {
     listeners.delete(listener);
   };
 }
-export function useCopiedList() {
-  return useSyncExternalStore(subscribe, () => copied);
+export function getCopiedList() {
+  return copied;
 }

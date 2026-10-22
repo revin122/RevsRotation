@@ -1,23 +1,15 @@
-import React, { useCallback, useRef, useState } from 'react';
-import {
-  ActivityIndicator,
-  Alert,
-  Button,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { useCallback, useRef, useState } from 'react';
+import { Alert } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import ListScreen from './ListScreen';
-import { ListData } from './types';
-import { getRepository } from './storage';
-import { setCopiedList, useCopiedList } from './listClipboard';
-import { ROOT_ID } from './storage/repository';
+import { RootStackParamList } from '../types/navigation';
+import { ListData } from '../types/list';
+import { getRepository } from '../models/storage';
+import { ROOT_ID } from '../models/storage/repository';
+import { setCopiedList } from '../models/listClipboard';
+import { useCopiedList } from './useCopiedList';
 
-export type RootStackParamList = { RevRotation: { path: string[] } };
-
-export default function StoredListScreen({
+export function useStoredListController({
   navigation,
   route,
 }: NativeStackScreenProps<RootStackParamList, 'RevRotation'>) {
@@ -121,71 +113,20 @@ export default function StoredListScreen({
     }
   };
 
-  if (loading || error || !data) {
-    return (
-      <View style={styles.status}>
-        {loading ? (
-          <>
-            <ActivityIndicator />
-            <Text>Loading your list…</Text>
-          </>
-        ) : (
-          <>
-            <Text accessibilityRole="alert">
-              {error ?? 'List unavailable.'}
-            </Text>
-            <Button
-              title="Retry"
-              onPress={() => setRetry(value => value + 1)}
-            />
-            {path.length > 0 && (
-              <Button title="Back" onPress={() => navigation.goBack()} />
-            )}
-          </>
-        )}
-      </View>
-    );
-  }
-  return (
-    <View style={styles.container}>
-      <ListScreen
-        data={data}
-        path={path}
-        isRoot={path.length === 0}
-        busy={saving}
-        copiedListName={clipboard?.name}
-        canPaste={!!clipboard?.items.length}
-        onCopy={() => copyOrPaste('copy')}
-        onPaste={() => copyOrPaste('paste')}
-        onDataUpdate={save}
-        onBack={() => navigation.goBack()}
-        onNavigate={newPath =>
-          navigation.push('RevRotation', { path: newPath })
-        }
-      />
-      {saving && (
-        <View style={styles.saving} pointerEvents="none">
-          <Text>Working…</Text>
-        </View>
-      )}
-    </View>
-  );
+  return {
+    data,
+    loading,
+    error,
+    saving,
+    path,
+    retry: () => setRetry(value => value + 1),
+    back: () => navigation.goBack(),
+    navigate: (newPath: string[]) =>
+      navigation.push('RevRotation', { path: newPath }),
+    save,
+    copy: () => copyOrPaste('copy'),
+    paste: () => copyOrPaste('paste'),
+    copiedListName: clipboard?.name,
+    canPaste: !!clipboard?.items.length,
+  };
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1 },
-  status: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 24,
-    gap: 12,
-  },
-  saving: {
-    position: 'absolute',
-    top: 0,
-    alignSelf: 'center',
-    backgroundColor: 'white',
-    padding: 4,
-  },
-});

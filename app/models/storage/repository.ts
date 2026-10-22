@@ -1,26 +1,8 @@
-import { ListData, ListItem } from '../types';
-
-// Small adapter interface also allows exercising the same SQL against real
-// SQLite in tests without requiring the native React Native runtime.
-export type SqlExecutor = {
-  execute: (
-    sql: string,
-    params?: (string | number | null)[],
-  ) => Promise<{
-    rows: Record<string, any>[];
-  }>;
-};
-export type SqlDatabase = SqlExecutor & {
-  transaction: (work: (tx: SqlExecutor) => Promise<void>) => Promise<void>;
-};
+import type { ListData, ListItem } from '../../types/list';
+import type { SqlExecutor, SqlDatabase } from '../../types/storage';
+import type { CopiedList } from '../../types/clipboard';
 
 export const ROOT_ID = 'root';
-
-export type CopiedList = {
-  sourceId: string;
-  name: string;
-  items: { id: string; parentId: string; name: string; position: number }[];
-};
 
 export class ListRepository {
   constructor(private db: SqlDatabase) {}
